@@ -1,8 +1,13 @@
+# ==============================================================================
+# Algorithm to determine the weights (w) and bias (b) using the
+# Adam Adaptive Moment Estimation method
+# ==============================================================================
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Atribuindo valores de 1 a 7 de acordo com o nivel de escolaridade
+# Assigning values from 1 to 7 according the education level
 education_assigning_value = {
     "illiterate": 1,
     "basic.4y": 2,
@@ -13,35 +18,35 @@ education_assigning_value = {
     "university.degree": 7
 }
 
-# Funcao para preparar os dados que serao carregados:
+# Function to prepare the data that to be loaded:
 def load_and_prepare_data(csv_path):
-    # Carrega o arquivo .csv:
+    # Load the .csv file:
     df = pd.read_csv(csv_path, sep = ';')
-    # Mantem apenas os dados quando "education" for diferente de "unknown":
+    # Keep only rows where "education" is different from "unknown":
     df = df[df["education"] != "unknown"]
-    # Atribuir os valores à escolaridade conforme "education_assigning_value":
+    # Assigning values to education according "education_assigning_value":
     df["education_values"] = df["education"].map(education_assigning_value)
-    # Atribuir valores 0 e 1 na variavel de saida:
+    # Assign values 0 and 1 to the output variable:
     df["y_0_1"] = df["y"].map({"no": 0, "yes": 1})
-    # Determinar x e y os dados do DataFrame que serao usados no treinamento:
+    # Select x and y data from DataFrame to be used for training:
     x = df[["age", "education_values"]].values
     y = df["y_0_1"].values
-    # Normalizar os dados de x:
+    # Normalize the x data:
     x_norm = (x - np.mean(x, axis = 0)) / np.std(x, axis = 0)
     return x_norm, y
 
-# Funcao para determinar a funcao f(x):
+# Function to determine the function f(x):
 def fx(w, x, b):
     return 1 / (1 + np.exp(-(np.dot(x, w) + b)))
 
-# Funcao para calcular a funcao custo:
+# Function to compute the loss function:
 def cost(w, x, b, y):
     f = fx(w, x, b)
-    # Manter f(x) sempre entre 0 e 1 para evitar problemas numericos:
+    # Ensure that f(x) always stays beetwen 0 and 1 to avoid numeric issues:
     f = np.clip(f, 1e-15, 1 - 1e-15)
     return -np.mean(y * np.log(f) + (1- y) * np.log(1 - f))
 
-# Funcao para determinar w e b:
+# Function to determine weights (w) and bias (b):
 def search_w_b(x, y, cycles=10, epsilon=1e-6, alpha=0.1, beta1=0.9, beta2=0.999, epsilon_adam=1e-8):
     n = x.shape[1]
     w = np.zeros(n)
@@ -62,23 +67,23 @@ def search_w_b(x, y, cycles=10, epsilon=1e-6, alpha=0.1, beta1=0.9, beta2=0.999,
             dJ_dw = (f_i - y_i) * x_i
             dJ_db = (f_i - y_i)
 
-            # Atualizar momentos (1ª e 2ª ordem)
+            # Update moments (1st and 2nd order)
             m_w = beta1 * m_w + (1 - beta1) * dJ_dw
             v_w = beta2 * v_w + (1 - beta2) * (dJ_dw ** 2)
             m_b = beta1 * m_b + (1 - beta1) * dJ_db
             v_b = beta2 * v_b + (1 - beta2) * (dJ_db ** 2)
 
-            # Corrigir viés
+            # Correct bias:
             m_w_hat = m_w / (1 - beta1 ** t)
             v_w_hat = v_w / (1 - beta2 ** t)
             m_b_hat = m_b / (1 - beta1 ** t)
             v_b_hat = v_b / (1 - beta2 ** t)
 
-            # Atualização dos parâmetros
+            # Update parameters:
             w -= alpha * m_w_hat / (np.sqrt(v_w_hat) + epsilon_adam)
             b -= alpha * m_b_hat / (np.sqrt(v_b_hat) + epsilon_adam)
 
-            # Custo atual
+            # Total cost:
             J_calc = cost(w, x, b, y)
             J_history.append(J_calc)
 
@@ -86,7 +91,7 @@ def search_w_b(x, y, cycles=10, epsilon=1e-6, alpha=0.1, beta1=0.9, beta2=0.999,
                 break
     return w, b, J_history, j + 1
 
-# Funcao para avaliar a acuracia do aprendizado:
+# Function to evaluate the learning accuracy:
 def evaluation(csv_path, w, b):
     df = pd.read_csv(csv_path, sep = ';')
     df = df[df["education"] != "unknown"]
@@ -100,7 +105,7 @@ def evaluation(csv_path, w, b):
     accuracy = np.mean(y_pred == y_true)
     print(f"Acurácia: {accuracy * 100:.2f}%")    
     
-# Funcao para plotar o grafico de convergencia da funcao custo
+# Function to plot the convergence graph of the loss function:
 def plot_convergence(J_history):
     plt.figure()
     plt.plot(J_history)
@@ -109,19 +114,16 @@ def plot_convergence(J_history):
     plt.tight_layout()
     plt.show()
 
-# Carregando o arquivo para treinamento .csv:
+# Load .csv file for training:
 x, y = load_and_prepare_data("bank-additional.csv")
 
-# Determinando w e b:
+# Determine weights (w) and bias (b):
 w, b, J_final, i = search_w_b(x, y)
 
-# Mostrando as saidas:
+# Display the results:
 print("w = ", w)
 print("b = ", b)
 print("Iterações = ", i)
 print("Último custo J = ", J_final[-1])
 evaluation("bank-additional-full.csv", w, b)
 plot_convergence(J_final)
-
-
-

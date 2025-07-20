@@ -1,5 +1,11 @@
+# =============================================================================
+# Dichotomous search algorithm: algorithm to determine the minimum value of a
+# function within a given range
+# =============================================================================
+
 import numpy as np
 
+# Function to determine the value of x and f(x) the minimum:
 def dichotomous(f, a_i, b_i, epsilon, l):
     a = a_i
     b = b_i
